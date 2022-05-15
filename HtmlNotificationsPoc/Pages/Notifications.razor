@@ -1,0 +1,44 @@
+﻿@page "/notifications"
+@using Majorsoft.Blazor.Components.Notifications
+
+@inject IHtmlNotificationService _notificationService
+
+<h3>Notifications</h3>
+<p>HTML5 Notifications Supported: @_notificationsSupported</p>
+<p>User permission status: @_permissionsGranted.ToString()</p>
+<button @onclick="SendNotification">Send Notification</button>
+
+@code {
+    private bool _notificationsSupported = false;
+    private HtmlNotificationPermissionTypes _permissionsGranted;
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _notificationsSupported = await _notificationService.IsBrowserSupportedAsync();
+            _permissionsGranted = await _notificationService.CheckPermissionAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task RequestUserPermissionAsync()
+    {
+        await _notificationService.RequestPermissionAsync(async res =>
+        {
+            _permissionsGranted = res;
+            StateHasChanged();
+        });
+    }
+
+    private async Task SendNotification()
+    {
+        if (_permissionsGranted != HtmlNotificationPermissionTypes.Granted)
+            await RequestUserPermissionAsync();
+
+        await _notificationService.ShowsAsync(new HtmlNotificationOptions("Test")
+            {
+                Body = "Body"
+            });
+    }
+}
