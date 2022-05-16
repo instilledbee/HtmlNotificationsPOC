@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>faa9aee4-4da9-415b-a274-0425a96d024a</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Majorsoft.Blazor.Components.Notifications" Version="1.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.5" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />
   </ItemGroup>
 
