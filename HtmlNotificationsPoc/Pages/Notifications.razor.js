@@ -22,16 +22,6 @@
                     } else if (registration.active) {
                         console.log('Service worker active');
                     }
-
-                    if (registration.active) {
-                        dotnet.invokeMethodAsync('SetServiceWorkerStatus', true);
-
-                        if (!(registration.showNotification)) {
-                            console.log('Browser does not support off-site push notifications.');
-                        } else {
-                            dotnet.invokeMethodAsync('SetSupportState', true);
-                        }
-                    }
                 });
             } else {
                 console.log('Browser does not support service workers. Push notifications may not work.');
@@ -42,28 +32,39 @@
 
 export function Subscribe(dotnet, applicationServerPublicKey) {
     navigator.serviceWorker.ready.then(function (reg) {
-        const subscribeParams = { userVisibleOnly: true };
 
-        //Setting the public key of our VAPID key pair.
-        const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
-        subscribeParams.applicationServerKey = applicationServerKey;
+        if (reg.active) {
+            dotnet.invokeMethodAsync('SetServiceWorkerStatus', true);
 
-        reg.pushManager.subscribe(subscribeParams)
-            .then(function (subscription) {
-                const p256dh = base64Encode(subscription.getKey('p256dh'));
-                const auth = base64Encode(subscription.getKey('auth'));
+            const subscribeParams = { userVisibleOnly: true };
 
-                console.log(subscription);
+            //Setting the public key of our VAPID key pair.
+            const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+            subscribeParams.applicationServerKey = applicationServerKey;
 
-                console.log(subscription.endpoint);
-                console.log(p256dh);
-                console.log(auth);
+            if (!(reg.showNotification)) {
+                console.log('Browser does not support off-site push notifications.');
+            } else {
+                dotnet.invokeMethodAsync('SetSupportState', true);
 
-                dotnet.invokeMethodAsync('SetDeviceProperties', detectBrowser(), p256dh, auth, subscription.endpoint);
-            })
-            .catch(function (e) {
-                console.log('[subscribe] Unable to subscribe to push', e);
-            });
+                reg.pushManager.subscribe(subscribeParams)
+                    .then(function (subscription) {
+                        const p256dh = base64Encode(subscription.getKey('p256dh'));
+                        const auth = base64Encode(subscription.getKey('auth'));
+
+                        console.log(subscription);
+
+                        console.log(subscription.endpoint);
+                        console.log(p256dh);
+                        console.log(auth);
+
+                        dotnet.invokeMethodAsync('SetDeviceProperties', detectBrowser(), p256dh, auth, subscription.endpoint);
+                    })
+                    .catch(function (e) {
+                        console.log('[subscribe] Unable to subscribe to push', e);
+                    });
+            }
+        }
     });
 }
 
