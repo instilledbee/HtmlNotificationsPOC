@@ -1,19 +1,16 @@
-using HtmlNotificationsPoc.SignalR;
-using Majorsoft.Blazor.Components.Notifications;
-using Microsoft.AspNetCore.ResponseCompression;
+using HtmlNotificationsPoc.Configuration;
+using HtmlNotificationsPoc.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddNotifications();
-builder.Services.AddSignalR();
-builder.Services.AddResponseCompression(opts =>
-{
-    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        new[] { "application/octet-stream" });
-});
+builder.Services.AddHttpClient();
+
+builder.Services.AddSingleton<SubscriptionRepository>();
+
+builder.Services.Configure<PushNotificationOptions>(builder.Configuration.GetSection(nameof(PushNotificationOptions)));
 
 var app = builder.Build();
 
@@ -37,7 +34,7 @@ app.MapFallbackToPage("/_Host");
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHub<NotificationsHub>("/notifications");
+    endpoints.MapControllers();
 });
 
 app.Run();

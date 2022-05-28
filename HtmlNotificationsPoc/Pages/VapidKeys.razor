@@ -1,0 +1,38 @@
+﻿@page "/vapidkeys"
+
+@using WebPush
+
+<h3>VAPID Keys Generator</h3>
+<p>Add these generated keys to your <code>appsettings.json</code></p>
+
+<pre>
+    {
+        "PublicKey": "@publicKey",
+        "PrivateKey": "@privateKey"
+    }
+</pre>
+
+<button @onclick="GenerateNewKeys">Generate New Keys</button>
+
+@code {
+    private string publicKey;
+    private string privateKey;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            GenerateNewKeys();
+        }
+    }
+
+    private void GenerateNewKeys()
+    {
+        var keys = VapidHelper.GenerateVapidKeys();
+
+        this.publicKey = keys.PublicKey;
+        this.privateKey = keys.PrivateKey;
+
+        StateHasChanged();
+    }
+}
