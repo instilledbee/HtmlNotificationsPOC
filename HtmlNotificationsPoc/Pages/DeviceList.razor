@@ -5,6 +5,7 @@
 <table class="table">
     <thead>
         <tr>
+            <td></td>
             <td>Device ID</td>
             <td>Device Name</td>
             <td>Push Endpoint</td>
@@ -15,28 +16,81 @@
     <tbody>
         @foreach (var sub in _subscriptions)
         {
-            <tr>
-                <td>@sub.Id</td>
-                <td>@sub.Name</td>
-                <td>@sub.PushEndpoint</td>
-                <td>@sub.PushP256DH</td>
-                <td>@sub.PushAuth</td>
+            <tr @key="sub.Subscription.Id">
+                <td><input type="checkbox" @bind="sub.Selected" /></td>
+                <td>@sub.Subscription.Id</td>
+                <td>@sub.Subscription.Name</td>
+                <td>@sub.Subscription.PushEndpoint</td>
+                <td>@sub.Subscription.PushP256DH</td>
+                <td>@sub.Subscription.PushAuth</td>
             </tr>
         }
     </tbody>
 </table>
+<button disabled="@NoneSelected" @onclick="Notify">Send Notification</button>
+<button disabled="@NoneSelected" @onclick="Delete">Delete Subscription</button>
 
 @code {
-    private List<Subscription> _subscriptions = new();
+    private List<SubscriptionViewModel> _subscriptions = new();
+    private bool NoneSelected
+    {
+        get => !_subscriptions.Any(s => s.Selected);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ReloadList();
+        }
+    }
+
+    private async Task Delete()
+    {
+        using (var client = _httpClientFactory.CreateClient("LocalApi"))
+        {
+            foreach (var s in _subscriptions.Where(s => s.Selected)) 
+            {
+                var response = await client.DeleteAsync($"api/Subscriptions/{s.Subscription.Id}");
+            }
+        }
+
+        await ReloadList();
+    }
+
+    private async Task Notify()
+    {
+        using (var client = _httpClientFactory.CreateClient("LocalApi"))
+        {
+            foreach (var s in _subscriptions.Where(s => s.Selected)) 
+            {
+                var response = await client.PostAsync($"api/Subscriptions/notify/{s.Subscription.Id}", null);
+            }
+        }
+    }
+
+    private async Task ReloadList()
     {
         using (var client = _httpClientFactory.CreateClient("LocalApi"))
         {
             var response = await client.GetAsync("api/Subscriptions");
-            _subscriptions = await response.Content.ReadFromJsonAsync<List<Subscription>>();
+            var list = await response.Content.ReadFromJsonAsync<List<Subscription>>();
+
+            _subscriptions = list.Select(l => new SubscriptionViewModel() { Subscription = l }).ToList();
 
             StateHasChanged();
         }
+    }
+
+    private void SelectCheckbox(Guid id, object value)
+    {
+        _subscriptions.First(s => s.Subscription.Id == id).Selected = (bool)value;
+        StateHasChanged();
+    }
+
+    private class SubscriptionViewModel
+    {
+        public bool Selected { get; set; }
+        public Subscription Subscription { get; set; }
     }
 }

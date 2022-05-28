@@ -18,5 +18,18 @@ namespace HtmlNotificationsPoc.Persistence
 
             subscriptions.Add(subscription);
         }
+
+        public void Delete(Guid id)
+        {
+            var subscription = subscriptions.FirstOrDefault(s => s.Id == id);
+
+            if (subscription != null)
+                subscriptions.Remove(subscription);
+        }
+
+        public Subscription Single(Guid id)
+        {
+            return subscriptions.SingleOrDefault(s => s.Id == id);
+        }
     }
 }

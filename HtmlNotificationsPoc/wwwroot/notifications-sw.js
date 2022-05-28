@@ -14,8 +14,8 @@
 
     event.waitUntil(self.registration.showNotification(title, {
         body: message,
-        icon: icon,
-        badge: icon
+        //icon: icon,
+        //badge: icon
     }));
 });
 
