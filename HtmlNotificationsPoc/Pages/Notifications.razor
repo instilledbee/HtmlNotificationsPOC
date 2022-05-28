@@ -1,18 +1,46 @@
 ﻿@page "/notifications"
 @using HtmlNotificationsPoc.Configuration
+@using HtmlNotificationsPoc.Models
 @using Microsoft.Extensions.Options
 
 @inject IHttpClientFactory _httpClientFactory
-@inject IJSRuntime JS;
-@inject IOptionsSnapshot<PushNotificationOptions> _notificationsConfig;
+@inject IJSRuntime JS
+@inject IOptionsSnapshot<PushNotificationOptions> _notificationsConfig
+@inject IHttpClientFactory _httpClientFactory
 
 <h3>Notifications</h3>
 <h4>Browser checks: </h4>
-<p>HTML5 Notifications Supported: @_notificationsSupported</p>
-<button @onclick="SubscribeAsync">Subscribe to Notifications</button>
+<ul>
+    <li>HTML5 Notifications Supported: @_notificationsSupported</li>
+    <li>Service Worker Registered: @_serviceWorkerRegistered</li>
+    <li>User Consent: @_permissionStatus</li>
+</ul>
+<h4>Device properties: </h4>
+<ul>
+    <li><strong>Device Name: </strong> @_subscription?.Name</li>
+    <li><strong>PushP256DH: </strong> <code>@_subscription?.PushP256DH</code></li>
+    <li><strong>PushAuth: </strong> <code>@_subscription?.PushAuth</code></li>
+    <li><strong>Endpoint: </strong> <code>@_subscription?.PushEndpoint</code></li>
+</ul>
+<button @onclick="Subscribe" disabled="@DisableSubscription">Subscribe to Notifications</button>
 
 @code {
     private bool _notificationsSupported = false;
+    private bool _serviceWorkerRegistered = false;
+    private string _permissionStatus = string.Empty;
+    private Subscription _subscription = null;
+
+    private bool DisableSubscription
+    {
+        get
+        {
+            return !_notificationsSupported || 
+                   !_serviceWorkerRegistered || 
+                   _permissionStatus != "granted" ||
+                   _subscription == null;
+        }
+    }
+
     private IJSObjectReference _notificationsJs;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -21,19 +49,65 @@
 
         if (firstRender)
         {
-            await _notificationsJs.InvokeVoidAsync("RegisterServiceWorker");
+            var objRef = DotNetObjectReference.Create(this);
+
+            await _notificationsJs.InvokeVoidAsync("RegisterServiceWorker", objRef);
 
             var publicKey = _notificationsConfig.Value.PublicKey;
 
-            await _notificationsJs.InvokeVoidAsync("Subscribe", publicKey);
+            await _notificationsJs.InvokeVoidAsync("Subscribe", objRef, publicKey);
         }
     }
 
-    private async Task SubscribeAsync()
+    [JSInvokable]
+    public void SetPermissionStatus(string status)
     {
+        _permissionStatus = status;
+        StateHasChanged();
     }
 
-    private async Task RequestUserPermissionAsync()
+    [JSInvokable]
+    public void SetSupportState(bool isNotificationSupported)
     {
+        _notificationsSupported = isNotificationSupported;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void SetServiceWorkerStatus(bool isRegistered)
+    {
+        _serviceWorkerRegistered = isRegistered;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void SetDeviceProperties(string name, string pushp256dh, string pushAuth, string pushEndpoint)
+    {
+        _subscription = new Subscription()
+        {
+            Name = name,
+            PushP256DH = pushp256dh,
+            PushAuth = pushAuth,
+            PushEndpoint = pushEndpoint
+        };
+
+        StateHasChanged();
+    }
+
+    private async Task Subscribe()
+    {
+        using (var client = _httpClientFactory.CreateClient("LocalApi"))
+        {
+            var response = await client.PutAsJsonAsync("/api/Subscriptions", _subscription);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Success!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Can't add subscription - {response.StatusCode}");
+            }
+        }
     }
 }

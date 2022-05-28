@@ -2,11 +2,14 @@ using HtmlNotificationsPoc.Configuration;
 using HtmlNotificationsPoc.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+var config = builder.Configuration;
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddHttpClient();
+
+// HTTP client factory for the local API endpoints
+builder.Services.AddHttpClient("LocalApi", client => client.BaseAddress = new Uri(config.GetValue<string>("ApiUrl")));
 
 builder.Services.AddSingleton<SubscriptionRepository>();
 

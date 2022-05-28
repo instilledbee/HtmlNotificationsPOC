@@ -1,0 +1,42 @@
+﻿@using HtmlNotificationsPoc.Models
+@inject IHttpClientFactory _httpClientFactory
+
+<h3>Registered Devices</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <td>Device ID</td>
+            <td>Device Name</td>
+            <td>Push Endpoint</td>
+            <td>Device Public Key</td>
+            <td>Device Auth Key</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var sub in _subscriptions)
+        {
+            <tr>
+                <td>@sub.Id</td>
+                <td>@sub.Name</td>
+                <td>@sub.PushEndpoint</td>
+                <td>@sub.PushP256DH</td>
+                <td>@sub.PushAuth</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Subscription> _subscriptions = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        using (var client = _httpClientFactory.CreateClient("LocalApi"))
+        {
+            var response = await client.GetAsync("api/Subscriptions");
+            _subscriptions = await response.Content.ReadFromJsonAsync<List<Subscription>>();
+
+            StateHasChanged();
+        }
+    }
+}
