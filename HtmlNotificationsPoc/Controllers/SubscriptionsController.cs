@@ -44,7 +44,7 @@ namespace HtmlNotificationsPoc.Controllers
 
         [HttpPost]
         [Route("notify/{id}")]
-        public IActionResult Notify(Guid id)
+        public IActionResult Notify([FromRoute] Guid id, [FromBody] NotificationPayload payload)
         {
             var subscription = repository.Single(id);
 
@@ -52,11 +52,14 @@ namespace HtmlNotificationsPoc.Controllers
             {
                 var pushSubscription = new PushSubscription(subscription.PushEndpoint, subscription.PushP256DH, subscription.PushAuth);
                 var vapidDetails = new VapidDetails("mailto:example@example.com", pushNotificationOptions.PublicKey, pushNotificationOptions.PrivateKey);
-                var payload = new { title = "Hello!", message = $"Notification sent on {DateTime.Now}" };
+                var jsonPayload = JsonSerializer.Serialize(payload, new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
 
                 using (var webPushClient = new WebPushClient())
                 {
-                    webPushClient.SendNotification(pushSubscription, JsonSerializer.Serialize(payload), vapidDetails);
+                    webPushClient.SendNotification(pushSubscription, jsonPayload, vapidDetails);
                 }
 
                 return Ok();

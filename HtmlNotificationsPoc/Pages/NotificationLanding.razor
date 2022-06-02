@@ -1,0 +1,12 @@
+﻿@page "/landing/{notificationid}"
+
+@inject NavigationManager NavManager
+
+<h3>Notification Landing</h3>
+
+<p>Triggered by: @NotificationId</p>
+
+@code {
+    [Parameter]
+    public string NotificationId { get; set; }
+}

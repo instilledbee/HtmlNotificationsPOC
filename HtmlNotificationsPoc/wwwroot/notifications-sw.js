@@ -4,21 +4,25 @@
     }
 
     let data = {};
+
     if (event.data) {
         data = event.data.json();
     }
 
-    const title = data.title;
-    const message = data.message;
-    //var icon = "images/push-icon.jpg";
-
-    event.waitUntil(self.registration.showNotification(title, {
-        body: message,
-        //icon: icon,
-        //badge: icon
-    }));
+    event.waitUntil(self.registration.showNotification(data.title, data.options));
 });
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
+
+    const tag = event.notification.tag;
+    const targetUrl = `/landing/${tag}`;
+
+    event.waitUntil(clients.matchAll({
+        type: "window"
+    }).then(function (clientList) {
+        // open a new window/tab to the target URL
+        if (clients.openWindow)
+            return clients.openWindow(targetUrl);
+    }));
 });
